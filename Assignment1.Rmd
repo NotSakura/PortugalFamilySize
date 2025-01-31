@@ -100,3 +100,64 @@ Notes:
 - It's well known that families are larger in rural areas (i.e. `region` is a confounder).
 - You should proceed as if an expert in this area has told you that you do not need to consider zero-inflation.  Zero-inflated models do not fit well to this data, probably because birth rates are lower than Fiji, many zeros are expected, and the likelihood is flat.
 
+
+
+```{r}
+hist(portugal$children, xlab='number of children')
+```
+
+
+```{r}
+# first turn literacy into binary variable
+# Ensure literacy is a factor with levels 'yes' and 'no'
+portugal$literacy = factor(portugal$literacy, levels = c('no', 'yes'))
+
+# Convert to binary numeric values (1 for 'yes', 0 for 'no')
+portugal$literacy_binary = as.numeric(portugal$literacy) - 1
+
+
+#gamma
+portugal_clean = portugal[portugal$children > 0, ]
+
+# Fit the model again
+cFit = glm(children ~ age + literacy, data = portugal_clean, family = Gamma(link='log'))
+
+knitr::kable(rbind(summary(cFit)$coef, coefv=c(sqrt(summary(cFit)$dispersion), NA, NA, NA)), digits = 4)
+```
+
+
+
+```{r}
+
+
+## skew normal
+#install.packages("sn", repos = "https://cloud.r-project.org/")
+
+library('sn')
+cFitSN = selm(children~age+literacy_binary, data=portugal, family='SN')
+knitr::kable(summary(cFitSN, 'DP', cov = TRUE)@param.table, digits = 2)
+
+```
+
+
+```{r}
+##poisson
+
+portugalPois = glm(children~age+literacy_binary, data = portugal, family = poisson(link='log'))
+knitr::kable(summary(portugalPois)$coef, digits=3)
+```
+
+
+
+```{r}
+##negative binomial
+#install.packages('glmmTMB')
+library('glmmTMB')
+
+portugalNB = glmmTMB(children~age+literacy_binary, data=portugal, family = nbinom2)
+knitr::kable(rbind(confint(portugalNB)[1:3, c(3,1,2)], sd=1/sqrt(confint(portugalNB, parm='sigma'))[c(3,1,2)]), digits = 3)
+```
+
+
+
+
