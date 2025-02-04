@@ -1,5 +1,10 @@
-
-
+---
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+ 
 Portugal fertility survey 1979
 
 - [More information](https://wfs.dhsprogram.com/index.cfm?ccode=pt)
@@ -102,12 +107,40 @@ Notes:
 
 
 
-```{r}
+---
+title: "Portugal Fertility Rate based on literacy rate and age"
+author: "Shreya Sakura Noskor and Yuming Huang"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+## Abstract
+
+
+
+
+## Introduction
+
+If you were to open the news right now one of the main issues highlighted in current media is the decline in birth rate. Countries such as Korea, Japan and China have began to realise the very real issue of the declining birth rate in their respective countries. A lot of studies have gone into figuring out the cause for this and it seems like most point to the fact that with more women enter the work force they are no longer motivated to have children. They also state that the major reason may also be the rising literacy rate. We are going to be investigating this phenomenon. 
+
+
+
+
+## Methods
+
+
+## Results
+
+
+## Conclusion
+
+```{r, include=FALSE}
 hist(portugal$children, xlab='number of children')
 ```
 
 
-```{r}
+```{r, include=FALSE}
 # first turn literacy into binary variable
 # Ensure literacy is a factor with levels 'yes' and 'no'
 portugal$literacy = factor(portugal$literacy, levels = c('no', 'yes'))
@@ -127,7 +160,7 @@ knitr::kable(rbind(summary(cFit)$coef, coefv=c(sqrt(summary(cFit)$dispersion), N
 
 
 
-```{r}
+```{r, include=FALSE}
 
 
 ## skew normal
@@ -140,7 +173,7 @@ knitr::kable(summary(cFitSN, 'DP', cov = TRUE)@param.table, digits = 2)
 ```
 
 
-```{r}
+```{r, include=FALSE}
 ##poisson
 
 portugalPois = glm(children~age+literacy_binary, data = portugal, family = poisson(link='log'))
@@ -149,7 +182,7 @@ knitr::kable(summary(portugalPois)$coef, digits=3)
 
 
 
-```{r}
+```{r, include=FALSE}
 ##negative binomial
 #install.packages('glmmTMB')
 library('glmmTMB')
