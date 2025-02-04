@@ -161,3 +161,10 @@ knitr::kable(rbind(confint(portugalNB)[1:3, c(3,1,2)], sd=1/sqrt(confint(portuga
 
 
 
+
+## Reference
+
+
+
+https://scholarspace.manoa.hawaii.edu/server/api/core/bitstreams/1d4b93bd-9c50-4d84-846d-0ae0880100f1/content
+- https://pubmed.ncbi.nlm.nih.gov/12283968/
