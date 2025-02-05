@@ -122,10 +122,11 @@ output: html_document
 
 ## Introduction
 
-If you were to open the news right now one of the main issues highlighted in current media is the decline in birth rate. Countries such as Korea, Japan and China have began to realise the very real issue of the declining birth rate in their respective countries. A lot of studies have gone into figuring out the cause for this and it seems like most point to the fact that with more women enter the work force they are no longer motivated to have children. They also state that the major reason may also be the rising literacy rate. We are going to be investigating this phenomenon. 
+Global fertility rates have been declining, often linked to factors like education and access to healthcare. In particular, educated women tend to have fewer children and delay childbirth. In countries like Portugal, literacy and age at marriage can play significant roles in family size decisions. This report will explore how these factors influence family size in Portugal.
 
+Of course, it is not exactly the number of children that directly affects the literacy rates of countries but usually it is the other way around: where the literacy rates affect the number of children a family has. This is a vast area of research so there's been a considerable amount of research that has already been done. For example, one group of researchers decided to explore the effects of literacy rates (among other things) on HRFB which is high-risk fertility behavior in women (such as having children too soon or too late and/or having too many children too close together) (Woldeamanuel et al., 2023). They found that "the women who had received no education or only primary education are more likely to experience high-risk fertility behavior than women with a higher level of education" meaning there is a direct correlation between literacy rates and the health/behavior of the mother (Woldeamanuel et al., 2023). Another group of researchers in 2013 took a look at the correlation between literacy rates and infant health and population stabilization. The main results from that report were that education allows women to spend more money on childcare, and encourages healthy decision-making roles about their and their child's nutrition and lifestyle. They also saw that female literacy was the deciding factor as opposed to male literacy rates (Saurabh et al., 2013). The last group of researchers took a look at the relationship between literacy rates and institutional delivery services, where they see if mothers safely give birth to children. Their key finding was also that there was a positive correlation where the more educated one was, the more well-versed they were in their delivery options, lowering the maternal and infant mortality rate (Khan et al., 2022). These studies show that literacy impacts maternal and child mortality rates, which directly correlates to family size.
 
-
+With all of this information in mind, this report will further investigate this phenomenon by asking "How do literacy and age of a marriage affect family size?". We will create models to see which factors, like literacy, age, and region, affect family size in Portugal. Our report is structured as such: Methods section outlines the statistical procedure used to model the data to gather more insights into our research question, the Results section where we discuss the properties of data and the model to highlight the key areas, and lastly our conclusion section which will interpret the key areas that were talked about in the Results section. This will allow us to answer our research question as well as connect it to the real world.
 
 ## Methods
 
@@ -197,7 +198,12 @@ knitr::kable(rbind(confint(portugalNB)[1:3, c(3,1,2)], sd=1/sqrt(confint(portuga
 
 ## Reference
 
+Saurabh, S., Sarkar, S., & Pandey, D. K. (2013). Female Literacy Rate is a Better Predictor of Birth Rate and Infant Mortality Rate in India. Journal of family medicine and primary care, 2(4), 349–353. https://doi.org/10.4103/2249-4863.123889
 
 
-https://scholarspace.manoa.hawaii.edu/server/api/core/bitstreams/1d4b93bd-9c50-4d84-846d-0ae0880100f1/content
-- https://pubmed.ncbi.nlm.nih.gov/12283968/
+Woldeamanuel, B. T., Gessese, G. T., Demie, T. G., Handebo, S., & Biratu, T. D. (2023). Women's education, contraception use, and high-risk fertility behavior: A cross-sectional analysis of the demographic and health survey in Ethiopia. Frontiers in global women's health, 4, 1071461. https://doi.org/10.3389/fgwh.2023.1071461
+
+
+
+  Khan, J. R., Ara, T., Rahman, Md. M., Hossain, Md. B., & Muurlink, O. (2022). A multilevel assessment of the influence of education on women’s uptake of institutional delivery services during childbirth in Bangladesh. Midwifery, 113, 103425–103425. https://doi.org/10.1016/j.midw.2022.103425
+
