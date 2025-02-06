@@ -1,17 +1,12 @@
 ---
+title: "Portugal Fertility Rate based on literacy rate and age"
+author: "Shreya Sakura Noskor and Yuming Huang"
+date: "`r Sys.Date()`"
 output:
   pdf_document: default
   html_document: default
   word_document: default
 ---
- 
-Portugal fertility survey 1979
-
-- [More information](https://wfs.dhsprogram.com/index.cfm?ccode=pt)
-- [data source](https://wfs.dhsprogram.com/)
-- [data dictionary](https://wfs.dhsprogram.com/pt/ptsr01.dct)
-
-File `portugal.RData` on the course web site.  Code in `Assignment1.Rmd`
 
 
 ```{r dataDownload, include=FALSE}
@@ -86,33 +81,7 @@ portugal$region = relevel(portugal$region, 'lt10k')
 if(FALSE) save(portugal, file='portugal.RData')
 ```
 
-```{r thedata}
-head(portugal)
-table(portugal$region)
-```
 
-Region is `lt10k` rural areas (less than 10,000 people), towns of size 10-20k, 20k+, and the two largest cities (Lisbon and Porto).
-
-
-The Question: 
-
-- How do literacy and age of marriage affect family size?
-- After we account for known explanatory variables, how much variation (if any) is there in birth rates?
-
-Notes: 
-
-- By European standards Portugal is a poor country, and in 1980 it had the same GDP per capita as Mexico.
-- It's well known that families are larger in rural areas (i.e. `region` is a confounder).
-- You should proceed as if an expert in this area has told you that you do not need to consider zero-inflation.  Zero-inflated models do not fit well to this data, probably because birth rates are lower than Fiji, many zeros are expected, and the likelihood is flat.
-
-
-
----
-title: "Portugal Fertility Rate based on literacy rate and age"
-author: "Shreya Sakura Noskor and Yuming Huang"
-date: "`r Sys.Date()`"
-output: html_document
----
 
 
 ## Abstract
@@ -129,69 +98,519 @@ Of course, it is not exactly the number of children that directly affects the li
 With all of this information in mind, this report will further investigate this phenomenon by asking "How do literacy and age of a marriage affect family size?". We will create models to see which factors, like literacy, age, and region, affect family size in Portugal. Our report is structured as such: Methods section outlines the statistical procedure used to model the data to gather more insights into our research question, the Results section where we discuss the properties of data and the model to highlight the key areas, and lastly our conclusion section which will interpret the key areas that were talked about in the Results section. This will allow us to answer our research question as well as connect it to the real world.
 
 ## Methods
+  The data that we use was extracted from [data source](https://wfs.dhsprogram.com/) and the code was cleaned by instructors in STA303, using R and its various libraries. From the data gathered there were 4 variables that we use to make a model that will answer our research questions.
+  
+### Poisson Model
+   Because the value we are investigating is the size of the family and so the columns 'children' becomes our outcome variable. Because the value of that coloumn is a a continuous count variable, we chose a Poisson Model. 
+   
+   \[
+Y_i \sim \text{Poisson}(\mu_i)
+\]
+\[
+\mu_i = \exp(\beta_0 + \beta_1 \cdot \text{logAgeMarried}_i + \beta_2 \cdot \text{ageMarried}_i + \beta_3 \cdot \text{literacy}_i)
+\]
+
+   
+   
+   
+   Now we consider the fact that some people who have been married longer may have a bigger family size because they simply had more time then others (independent from other variables we are trying to investigate). Hence we are trying to account for that offset by accounting for the logarithm of the age married variable. 
+   
+   \[
+Y_i \sim \text{Poisson}(p_i)
+\]
+\[
+log(p_i) = \beta_0 + \beta_1 \cdot \text{logAgeMarried}_i + \beta_2 \cdot \text{ageMarried}_i + \beta_3 \cdot \text{literacy}_i + log(O_i)
+\]
+\[
+p_i = \mu_iO_i
+\]
+
+   
+   
+   Next we look at the mean and standard deviation of the data to see if there is an overdispersion. We account for this due to the fact that real world data may have more variance then we have expected and since of the rules of poisson distribution is that the mean and the standard deviation must be similar we investigate the data to see if this is the case. 
+   
+   
+   
+   We see from figure in Results that over dispersion is definitely an issue because of the difference in mean and variance. And hence we decide to use a Negative Binomial distribution instead to account for the overdispersion. 
+   \[
+Y_i \sim \text{NegBin}(O_i\mu_i, \tau)
+\]
+\[
+log(\mu_i) = \beta_0 + \beta_1 \cdot \text{logAgeMarried}_i + \beta_2 \cdot \text{ageMarried}_i + \beta_3 \cdot \text{literacy}_i
+\]
+
+   
+   
 
 
 ## Results
 
+```{r, echo=FALSE}
+# Current Plan
+# 1. model poisson with literacy and ageMarried interaction term
+# 2. poisson with region 
+
+# 3. poisson with region and offset
+# 4. model negative binomial with literacy and ageMarried interaction term
+# 5. negbin with region
+# 6. negbin with region and offset
+# 7. region contrasts for poisson
+# 8. region contrasts for negbin
+
+# Since we are looking at count (family count), we should try a Poisson GLM model. No closed-form solution but we can use iteratively reweighted least squares to find an approximate MLK for betas # we can solve this using Newton-Raphson Method 
+
+
+poi_mod <- glm(children ~ ageMarried + literacy + literacy*ageMarried, data = portugal, family = poisson(link = "log"))
+
+knitr::kable(t(rbind(poi_mod$coef)), digits = 3)
+
+```
+
+This table shows the coefficients of the poisson model where the intercept is when they are literate, got married at age 20 to 22. The value for that is 0.753 so that means exp(0.753) = 2.12 children for the baseline family. Next we look at women that are not literate showing 0.629, which means women that are not literate will have exp(0.629)=1.87 more children then ones who are literate without taking age married into consideration. Taking a look at people who are married between 22 to 25 we see they have -0.077, which means they will have exp(-0.077) = 0.925 less child then the baseline group. And lastly looking at people married from 25 to 30 with no literacy we see that their value is -0.119 which means they have exp(-0.119) = 0.887 less child then people who married at 20-22 years old that are literate. 
+
+```{r, include=FALSE}
+# need to add estimation with likelihoods as well as interpretation of coefficients?
+
+# More complicated models for count data 
+
+# From slides:
+
+# Do literate women tend to have smaller families? 
+
+# Is this only because illiterate women marry earlier? 
+
+# How should we account for age and time married? 
+
+sum(as.character(portugal$ageMarried) == "0to15")
+sum(trimws(as.character(portugal$ageMarried)) == "0to15")
+table(portugal$literacy[trimws(as.character(portugal$ageMarried)) == "0to15"])
+
+
+```
+
+
+```{r, include=FALSE}
+literate = portugal$literacy == "yes"
+
+library(ggplot2)
+
+```
+
+
+```{r, include=FALSE}
+ggplot(portugal, aes(x = children, fill = literacy)) +
+  geom_histogram(bins = 100, position = "identity", alpha = 0.7) +
+  scale_fill_manual(values = c("no" = "red", "yes" = "blue")) +
+  labs(x = "Number of Children", y = "Count", fill = "Literacy") +
+  theme_minimal()
+```
+
+```{r, include=FALSE}
+library(dplyr)
+
+portugal <- portugal |>
+  mutate(region_type = case_when(
+    region %in% c("lisbon", "porto") ~ "Urban",  # Replace with actual urban regions
+    region %in% c("20k+", "10-20k", "lt10k") ~ "Rural",  # Replace with rural regions
+    TRUE ~ "Unknown"  # For any regions not classified
+  ))
+```
+
+
+
+```{r, echo=FALSE}
+# Now we should address some other problems. For example, dependence (births can't be closer than 8 months apart), overdispersion (fertility and desired family size vary from person to person) and inhomogeneity (fertility decreases with age). <- from slides
+
+# want to include offsets
+
+# Let's look at the most common baseline 
+
+table(portugal$ageMarried)
+
+# The most common is age 20 to 22
+
+portugal$logYearsMarried = log(pmax(1, portugal$monthsSinceM)/12)
+
+portugal$ageMarried = relevel(portugal$ageMarried, "20to22")
+
+portugalFit = glm(children ~ offset(logYearsMarried) + literacy + ageMarried + literacy*ageMarried, data = portugal, family = poisson)
+
+#Here we create offset on the log scale 
+# make the biggest ageMarried category the baseline
+# we fix beta = 1 for logYearsMarried
+# we make the simplifying assumption that you have to be married to have kids which is not necessarily true 
+# offset makes the assumption that the longer you are married the more children you might have? 
+
+knitr::kable(summary(portugalFit)$coef, digits = 3)
+
+# literate is the baseline and illiterate is 0.039 < 0.051 so the effect is not really there. No effect of literacy on birth rates. 
+```
+
+Now in this model above we take a look at the overdispersion case where we may have more variance in our data due to measurement and other circumstance outside of our data's predictors. Here we take log of marriage into consideration.The intercept again is a literate women who got married at 20 to 22 years old. They have around 0.17 children per year of marriage. Now looking at the same variables as last time non-literate people's value is 0.039 or exp(0.039) = 1.039. This means that non-literate 20-22 year olds will have 1.039 more child then literate people per year. Taking a look at people who are married between 22 to 25 we see they have -0.068, which means they will have exp(-0.068) = 0.934 less child per year than the baseline group. And lastly looking at people married from 25 to 30 with no literacy we see that their value is 0.162 which means they have exp(0.162) = 1.175 less child per year then people who married at 20-22 years old that are literate.
+
+```{r, echo=FALSE}
+m <- aggregate(portugal$children, by=list(portugal$literacy, portugal$ageMarried, portugal$region_type), mean)
+
+v <- aggregate(portugal$children, by=list(portugal$literacy, portugal$ageMarried, portugal$region_type), var)
+
+tab <- cbind(m, v[,4])
+
+knitr::kable(tab, digits=2, col.names=c("Literacy", "Age Married", "Region Type", "Mean", "Variance"))
+
+```
+Here we see that the mean and the variance for certain rows are off by a large amount, anywhere between 2 to 9. This shows evidence of overdispersion so we must make a negative binomial function like stated in Methods section. 
+
+```{r, include=FALSE}
+head(portugal)
+```
+
+
+```{r, include=FALSE}
+portugalFitCI = as.data.frame(exp(confint(portugalFit)[-1, ]))
+
+if (length(portugalFit$xlevels) > 0) {
+  portugalFitCI$level = gsub(paste(names(portugalFit$xlevels), collapse = '|'),
+                             "", rownames(portugalFitCI))
+  split_result = strsplit(rownames(portugalFitCI), portugalFitCI$level)
+} else {
+  portugalFitCI$level = ""
+  split_result = strsplit(rownames(portugalFitCI), " ")
+}
+
+# Debugging prints
+print(nrow(portugalFitCI))
+print(length(split_result))
+
+portugalFitCI$variable = sapply(split_result, function(x) ifelse(length(x) > 0, x[1], NA))
+
+# Ensure no mismatch in length
+portugalFitCI$variable = head(portugalFitCI$variable, nrow(portugalFitCI))
+
+portugalFitCI$x = 1:nrow(portugalFitCI)
+
+# Avoid division by zero
+portugalFitCI$cex = sqrt(1 / pmax(apply(log(portugalFitCI[, 1:2]), 1, diff), 1e-6))
+
+forXaxis = tapply(portugalFitCI$x, portugalFitCI$variable, mean)
+
+```
+
+
+
+```{r, include=FALSE}
+# Assuming your model object is named `portugalFit`
+portugalFitCI = as.data.frame(exp(confint(portugalFit)[-1,]))
+
+# Extract the level names
+portugalFitCI$level = gsub(paste(names(portugalFit$xlevels), collapse='|'),
+                           "",
+                           rownames(portugalFitCI))
+
+# Extract the variable names correctly
+# Use regex to extract the variable names from the row names
+portugalFitCI$variable = sub(paste0("(", paste(names(portugalFit$xlevels), collapse="|"), ").*"),
+                             "\\1",
+                             rownames(portugalFitCI))
+
+# Add an x-axis position for plotting
+portugalFitCI$x = 1:nrow(portugalFitCI)
+
+# Calculate the size of the points based on the confidence interval width
+portugalFitCI$cex = sqrt(1/apply(log(portugalFitCI[,1:2]), 1, diff))
+
+# Calculate the mean x-axis positions for each variable
+forXaxis = tapply(portugalFitCI$x, portugalFitCI$variable, mean)
+
+# Preview the first few rows of the data
+print(portugalFitCI[1:3,])
+
+# Create an empty plot with the correct axes and labels
+matplot(portugalFitCI[,1:2], type='n',
+        xaxt='n', bty='n', log='y', ylab='RR')
+
+# Add confidence interval segments
+segments(portugalFitCI$x, portugalFitCI[,1],
+         portugalFitCI$x, portugalFitCI[,2])
+
+# Add points for the estimates
+points(portugalFitCI$x,
+       exp(portugalFit$coef[-1]), pch=15,
+       cex = portugalFitCI$cex, col = '#00000030')
+
+# Add level names to the x-axis
+mtext(portugalFitCI$level, 1, at=portugalFitCI$x,
+      las=3, line=-1)
+
+# Add variable names to the x-axis
+mtext(names(forXaxis), 1, at=forXaxis,
+      line=-2)
+
+# Add a reference line at RR = 1
+abline(h=1, lty=3)
+```
+
+```{r, include=FALSE}
+# The bigger the box is, the bigger the effect is. The vertical lines are the 95% confidence intervals. One of the reasons the confidence interval could be huge is that there are not very many individuals in that category. The big boxes are the ones we estimated well so 22-25 and 15-18. 
+```
+
+
+```{r, include=FALSE}
+# Overdispersion happens becasuse Poisson does not have a variance parameter. Poisson assumes independence but there is variance in fertility and desired family size. 
+# Is there more variability that Poisson does not cover? We can use a negative binomial GLM
+#install.packages("glmmTMB")
+library('glmmTMB')
+portugalNB = glmmTMB(children ~ offset(logYearsMarried) + literacy + ageMarried + literacy*ageMarried, data = portugal, family = nbinom2)
+
+portugalNB2 = glmmTMB(children ~ offset(logYearsMarried) + literacy + ageMarried + literacy*ageMarried + region_type, data = portugal, family = nbinom2)
+
+```
+
+```{r, include=FALSE}
+# # Assuming `portugalNB` is your glmmTMB model
+# # Extract estimates
+# estimates <- coef(summary(portugalNB))$cond[, "Estimate"]
+# 
+# # Extract confidence intervals
+# conf_int <- confint(portugalNB, parm = "beta_", level = 0.95)
+
+
+```
+
+
+```{r, echo=FALSE}
+knitr::kable(
+  rbind(
+    confint(portugalNB)[1:10, c(3, 1, 2)], 
+    sd = 1 / sqrt(confint(portugalNB, parm = "sigma")[1, ])
+  ), digits = 3
+)
+
+dim(confint(portugalNB, parm = "sigma"))
+
+```
+ Since we find overdispersion we will interpret the values of the negative binomial as well. The intercept again is literate people that got married at 20-22 years old. The intercept shows a value of -1.727, which is the log rate of children per year for the baseline group. Which means exp(-1.727) = 0.177 children per year for literate people that got married at 20-22 years old. Then non-literate people have a value of 0.022 and exp(0.022) = 1.022, which means that non-illiterate people that got married at 20-22 years old have 1.022 more children per year then the baseline literate group (which means 0.177 x 1.022 = 0.18 children per year for non-literate people). Then we take a look at people married when they were 22-25 years old who are also literate and we see their value is -0.071 or exp(-0.071) = 0.932.This means that their rate of children per year decreased by 0.932 compared to our baseline group. And lastly the non-literate group of people that married when they were 25-30 years old have a value of 0.173, or exp(0.173) = 1.189. which means that their rate of children per year increased by 1.189 compared to the baseline (0.177 x 1.189 = 0.21 children per year).   
+ 
+
+```{r, include=FALSE}
+# In negative binomial, it is the standard deviation of the Gamma random variable representing the extra variation due to overdispersion (see slide 33 of week 3 videos for interpretation).
+
+exp(confint(portugalNB, 1))
+
+# the table estimates 0.1778223 (which I believe is one child every 1.7 years is the intercept from the video but I'm not sure)
+
+```
+
+```{r, include=FALSE}
+1/sqrt(confint(portugalNB, parm = "sigma"))
+# birth rates vary about 26%
+```
+
+
+```{r, echo=FALSE}
+knitr::kable(
+  rbind(
+    confint(portugalNB2)[1:15, c(3, 1, 2)], 
+    sd = 1 / sqrt(confint(portugalNB2, parm = "sigma")[1, ])
+  ), digits = 3
+)
+
+dim(confint(portugalNB2, parm = "sigma"))
+```
+Then just for the sake of looking we also take a look at how region affects our data, but much to our surprise it doesn't change the values too much. The only difference is that now the non-literate people that were married at 15 to 18 years old changed from -0.008 to 0.008 but even then it is not a significant change. We also see a new value for people who live in urban areas now (as that is how we decided to split our regions; rural and urban areas). Now the baseline is literate people who got married at 20-25 years old and they live in rural towns. All our interpretation stays the same with respect to the baseline group and the urban city value of -0.171 or exp(-0.171) = 0.843 tells us that compared to the baseline there is a decrease of 0.843 children per year in each household.
+
+
+```{r, include=FALSE}
+portugalNBCI = as.data.frame(exp(confint(portugalNB)[-1, ]))
+
+if (length(portugalNB$xlevels) > 0) {
+  portugalNBCI$level = gsub(paste(names(portugalNB$xlevels), collapse = '|'),
+                             "", rownames(portugalNBCI))
+  split_result = strsplit(rownames(portugalNBCI), portugalNBCI$level)
+} else {
+  portugalNBCI$level = ""
+  split_result = strsplit(rownames(portugalNBCI), " ")
+}
+
+# Debugging prints
+print(nrow(portugalNBCI))
+print(length(split_result))
+
+portugalNBCI$variable = sapply(split_result, function(x) ifelse(length(x) > 0, x[1], NA))
+
+# Ensure no mismatch in length
+portugalNBCI$variable = head(portugalNBCI$variable, nrow(portugalNBCI))
+
+portugalNBCI$x = 1:nrow(portugalNBCI)
+
+# Avoid division by zero
+portugalNBCI$cex = sqrt(1 / pmax(apply(log(portugalNBCI[, 1:2]), 1, diff), 1e-6))
+
+forXaxis = tapply(portugalNBCI$x, portugalNBCI$variable, mean)
+
+```
+
+
+```{r, include=FALSE, eval=FALSE}
+# the code isn't working right now but I'll fix it later
+# Assuming your model object is named `portugalNB`
+portugalNBCI = as.data.frame(exp(confint(portugalNB)[-1,]))
+
+# Extract the level names
+portugalNBCI$level = gsub(paste(names(portugalNB$xlevels), collapse='|'),
+                           "",
+                           rownames(portugalNBCI))
+
+# Extract the variable names correctly
+# Use regex to extract the variable names from the row names
+portugalNBCI$variable = sub(paste0("(", paste(names(portugalNB$xlevels), collapse="|"), ").*"),
+                             "\\1",
+                             rownames(portugalNBCI))
+
+# Add an x-axis position for plotting
+portugalNBCI$x = 1:nrow(portugalNBCI)
+
+# Calculate the size of the points based on the confidence interval width
+portugalNBCI$cex = sqrt(1/apply(log(portugalNBCI[,1:2]), 1, diff))
+
+# Calculate the mean x-axis positions for each variable
+forXaxis = tapply(portugalNBCI$x, portugalNBCI$variable, mean)
+
+# Preview the first few rows of the data
+print(portugalNBCI[1:3,])
+
+# Create an empty plot with the correct axes and labels
+matplot(portugalNBCI[,1:2], type='n',
+        xaxt='n', bty='n', log='y', ylab='RR')
+
+# Add confidence interval segments
+segments(portugalNBCI$x, portugalNBCI[,1],
+         portugalNBCI$x, portugalNBCI[,2])
+
+portugalNBCI$coef <- as.numeric(portugalNBCI$coef)
+
+# Add points for the estimates
+points(portugalNBCI$x,
+       exp(portugalNBCI$coef), pch=15,
+       cex = portugalNBCI$cex, col = '#00000030')
+
+# Add level names to the x-axis
+mtext(portugalNBCI$level, 1, at=portugalNBCI$x,
+      las=3, line=-1)
+
+# Add variable names to the x-axis
+mtext(names(forXaxis), 1, at=forXaxis,
+      line=-2)
+
+# Add a reference line at RR = 1
+abline(h=1, lty=3)
+
+```
+
+
+```{r, include=FALSE, eval=FALSE}
+# Extract exponentiated confidence intervals (excluding intercept)
+portugalNBCI = as.data.frame(exp(confint(portugalNB)[-1, ]))
+
+# Extract exponentiated coefficient estimates (excluding intercept)
+portugalNBCI$coef = exp(coef(portugalNB)[-1])
+
+# Extract the level names
+if (length(portugalNB$xlevels) > 0) {
+  portugalNBCI$level = gsub(paste(names(portugalNB$xlevels), collapse='|'), 
+                            "", rownames(portugalNBCI))
+  split_result = strsplit(rownames(portugalNBCI), portugalNBCI$level)
+} else {
+  portugalNBCI$level = ""
+  split_result = strsplit(rownames(portugalNBCI), " ")
+}
+
+# Extract variable names correctly
+portugalNBCI$variable = sapply(split_result, function(x) ifelse(length(x) > 0, x[1], NA))
+portugalNBCI$variable = head(portugalNBCI$variable, nrow(portugalNBCI))
+
+# Add an x-axis position for plotting
+portugalNBCI$x = 1:nrow(portugalNBCI)
+
+# Avoid division by zero in confidence interval width calculation
+portugalNBCI$cex = sqrt(1 / pmax(apply(log(portugalNBCI[, 1:2]), 1, diff), 1e-6))
+
+# Calculate the mean x-axis positions for each variable
+forXaxis = tapply(portugalNBCI$x, portugalNBCI$variable, mean)
+
+# Preview the first few rows
+print(portugalNBCI[1:3, ])
+
+# Create an empty plot with the correct axes and labels
+matplot(portugalNBCI[, 1:2], type='n', xaxt='n', bty='n', log='y', ylab='RR')
+
+# Add confidence interval segments
+segments(portugalNBCI$x, portugalNBCI[, 1], portugalNBCI$x, portugalNBCI[, 2])
+
+# Add points for the estimates (Now correctly using `coef`)
+points(portugalNBCI$x, portugalNBCI$coef, pch=15, 
+       cex=portugalNBCI$cex, col='#00000030')
+
+# Add level names to the x-axis
+mtext(portugalNBCI$level, 1, at=portugalNBCI$x, las=3, line=-1)
+
+# Add variable names to the x-axis
+mtext(names(forXaxis), 1, at=forXaxis, line=-2)
+
+# Add a reference line at RR = 1
+abline(h=1, lty=3)
+
+
+```
+
+```{r, include=FALSE}
+#install.packages("dotwhisker")
+library(dotwhisker)
+
+dwplot(list(poi_mod, portugalFit, portugalNB)) +
+  theme_minimal() +
+  labs(title = "Comparison of Models")
+
+```
+
+
+```{r, include=FALSE}
+#install.packages("ggplot2")
+#install.packages("jtools")
+library(jtools)
+plot_summs(poi_mod, portugalFit, portugalNB, omit.coefs = F, model.names = c("w/o offset", "w/ offset", "overdispersed"))
+
+
+```
+
+
+```{r, include=FALSE}
+# without region 
+
+# poi_mod3 <- glm(children ~  literacy*ageMarried, data = portugal, family = poisson(link = "log"))
+# portugalFit2 = glm(children ~ offset(logYearsMarried)  + literacy*ageMarried, data = portugal, family = poisson)
+# portugalNB2 = glmmTMB(children ~ offset(logYearsMarried) + literacy*ageMarried, data = portugal, family = nbinom2)
+
+```
+
+```{r, include=FALSE}
+# dwplot(list(poi_mod, poi_mod3, portugalFit2, portugalNB2)) +
+#   theme_minimal() +
+#   labs(title = "Comparison of Models")
+```
+
+
+
 
 ## Conclusion
+In conlcusion we see through out the results section that the literacy rate and the age you were married does affect the size of your family. We see that the sooner you get married the more children they have (as seen with the positive coeffecients). We also see the same outcome when we look at their literacy rate where if they are non-literate their coeffecients are positive which in turn means that there is a postive correlation between literacy and family size as well. Now since both literacy and age married affect the size of the family, the interaction variable, where we take both into account, also shows the same results where if they are both married early and have no literacy then their values are a lot higher. 
 
-```{r, include=FALSE}
-hist(portugal$children, xlab='number of children')
-```
-
-
-```{r, include=FALSE}
-# first turn literacy into binary variable
-# Ensure literacy is a factor with levels 'yes' and 'no'
-portugal$literacy = factor(portugal$literacy, levels = c('no', 'yes'))
-
-# Convert to binary numeric values (1 for 'yes', 0 for 'no')
-portugal$literacy_binary = as.numeric(portugal$literacy) - 1
+Some outliners in these conclusions are obviously the catagory of married between 0 to 13 years olds as it is not always biologically possible for a child that young to conceive as well as the fact that it is frowned upon in most societies. 
 
 
-#gamma
-portugal_clean = portugal[portugal$children > 0, ]
+### Limitations
+We are unable to factor other outside factors that might come into play such as the fact that one does not need to be married to have children. 
 
-# Fit the model again
-cFit = glm(children ~ age + literacy, data = portugal_clean, family = Gamma(link='log'))
-
-knitr::kable(rbind(summary(cFit)$coef, coefv=c(sqrt(summary(cFit)$dispersion), NA, NA, NA)), digits = 4)
-```
-
-
-
-```{r, include=FALSE}
-
-
-## skew normal
-#install.packages("sn", repos = "https://cloud.r-project.org/")
-
-library('sn')
-cFitSN = selm(children~age+literacy_binary, data=portugal, family='SN')
-knitr::kable(summary(cFitSN, 'DP', cov = TRUE)@param.table, digits = 2)
-
-```
-
-
-```{r, include=FALSE}
-##poisson
-
-portugalPois = glm(children~age+literacy_binary, data = portugal, family = poisson(link='log'))
-knitr::kable(summary(portugalPois)$coef, digits=3)
-```
-
-
-
-```{r, include=FALSE}
-##negative binomial
-#install.packages('glmmTMB')
-library('glmmTMB')
-
-portugalNB = glmmTMB(children~age+literacy_binary, data=portugal, family = nbinom2)
-knitr::kable(rbind(confint(portugalNB)[1:3, c(3,1,2)], sd=1/sqrt(confint(portugalNB, parm='sigma'))[c(3,1,2)]), digits = 3)
-```
-
+Because we categorized the region into 2 factors instead of the original 5, we may have limited some of the data we could have gathered from there. It seemed redundant for the sake of the report as our results do not show any significant change and our pre-research (in the introduction) did not seem to focus on how regions may affect family size, or even our other predictor variables, as well. 
 
 
 
